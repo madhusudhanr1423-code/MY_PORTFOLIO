@@ -16,19 +16,24 @@ export type PublicProject = {
   display_order: number;
 };
 
-const FALLBACK_URL = "https://tckapqgrmffxquayquvg.supabase.co";
-const FALLBACK_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRja2FwcWdybWZmeHF1YXlxdXZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2ODQ4OTcsImV4cCI6MjEwMTI2MDg5N30.I5dp52_DFwRm581S4iuth2eUPFdWbe2qnW42ErwHTKc";
-
 export const publicProjectsQueryKey = ["public", "projects"] as const;
 
 export const getPublicProjects = createServerFn({ method: "GET" }).handler(
   async (): Promise<PublicProject[]> => {
-    const supabase = createClient(
-      process.env["SUPABASE_URL"] ?? FALLBACK_URL,
-      process.env["SUPABASE_PUBLISHABLE_KEY"] ?? FALLBACK_KEY,
-      { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-    );
+    const supabaseUrl = process.env["SUPABASE_URL"];
+    const supabaseKey = process.env["SUPABASE_PUBLISHABLE_KEY"];
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("Missing Supabase environment variables");
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        storage: undefined,
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
 
     const { data, error } = await supabase
       .from("projects")
@@ -46,7 +51,9 @@ export const getPublicProjects = createServerFn({ method: "GET" }).handler(
       slug: row.slug ?? "",
       category: row.category ?? null,
       description: row.description ?? null,
-      technologies: Array.isArray(row.technologies) ? (row.technologies as string[]) : [],
+      technologies: Array.isArray(row.technologies)
+        ? (row.technologies as string[])
+        : [],
       cover_image: row.cover_image ?? null,
       live_url: row.live_url ?? null,
       github_url: row.github_url ?? null,
@@ -55,3 +62,4 @@ export const getPublicProjects = createServerFn({ method: "GET" }).handler(
     }));
   },
 );
+

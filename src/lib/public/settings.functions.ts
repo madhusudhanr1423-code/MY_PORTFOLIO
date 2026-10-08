@@ -1,3 +1,4 @@
+
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 
@@ -13,19 +14,24 @@ export type PublicSettings = {
   availability_status: string | null;
 };
 
-const FALLBACK_URL = "https://tckapqgrmffxquayquvg.supabase.co";
-const FALLBACK_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRja2FwcWdybWZmeHF1YXlxdXZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2ODQ4OTcsImV4cCI6MjEwMTI2MDg5N30.I5dp52_DFwRm581S4iuth2eUPFdWbe2qnW42ErwHTKc";
-
 export const publicSettingsQueryKey = ["public", "settings"] as const;
 
 export const getPublicSettings = createServerFn({ method: "GET" }).handler(
   async (): Promise<PublicSettings | null> => {
-    const supabase = createClient(
-      process.env["SUPABASE_URL"] ?? FALLBACK_URL,
-      process.env["SUPABASE_PUBLISHABLE_KEY"] ?? FALLBACK_KEY,
-      { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-    );
+    const supabaseUrl = process.env["SUPABASE_URL"];
+    const supabaseKey = process.env["SUPABASE_PUBLISHABLE_KEY"];
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("Missing Supabase environment variables");
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        storage: undefined,
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
 
     const { data, error } = await supabase
       .from("settings")
@@ -36,6 +42,7 @@ export const getPublicSettings = createServerFn({ method: "GET" }).handler(
       .maybeSingle();
 
     if (error) throw new Error(error.message);
+
     if (!data) return null;
 
     return {
@@ -50,3 +57,4 @@ export const getPublicSettings = createServerFn({ method: "GET" }).handler(
     };
   },
 );
+
